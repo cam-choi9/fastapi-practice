@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
+from typing import Optional
 
 app = FastAPI(title="Week 1 - Hello Tasks")
 
@@ -20,3 +21,16 @@ def create_task(task: Task):
         raise HTTPException(status_code=400, detail="Task ID already exists")
     TASKS.append(task)  
     return task
+
+@app.get("/tasks", response_model=list[Task])
+def list_tasks(done: Optional[bool] = None):
+    """
+    Query param `done` is optional:
+      - /tasks            → returns all
+      - /tasks?done=true  → only completed
+      - /tasks?done=false → only pending
+    """
+    if done is None:
+        return TASKS
+    return [t for t in TASKS if t.done == done]
+    
