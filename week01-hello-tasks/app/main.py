@@ -9,6 +9,10 @@ class Task(BaseModel):
     title: str = Field(..., min_length=1, max_length=100)
     done: bool = False
     
+class TaskUpdate(BaseModel):
+    done: Optional[bool] = None
+
+
 TASKS: list[Task] = []
 
 @app.get("/health")
@@ -34,3 +38,17 @@ def list_tasks(done: Optional[bool] = None):
         return TASKS
     return [t for t in TASKS if t.done == done]
     
+@app.patch("/tasks/{task_id}", response_model=Task)
+def update_task(task_id: int, patch: TaskUpdate):
+    """
+    If body is empty or {"done": null} → toggle.
+    If {"done": true|false} → set explicitly.
+    """
+    for t in TASKS:
+        if t.id == task_id:
+            if patch.done is None:
+                t.done = not t.done
+            else:
+                t.done = patch.done
+            return t
+    raise HTTPException(status_code=404, detail="Task not found")
