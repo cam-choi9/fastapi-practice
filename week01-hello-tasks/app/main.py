@@ -52,3 +52,16 @@ def update_task(task_id: int, patch: TaskUpdate):
                 t.done = patch.done
             return t
     raise HTTPException(status_code=404, detail="Task not found")
+
+@app.delete("/tasks/{task_id}", status_code=204)
+def delete_task(task_id: int):
+    """
+    Remove a task by id.
+    - 204 No Content on success (no body returned)
+    - 404 if the task doesn't exist
+    """
+    global TASKS
+    before = len(TASKS)
+    TASKS = [t for t in TASKS if t.id != task_id]
+    if len(TASKS) == before:
+        raise HTTPException(status_code=404, detail="Task not found")
