@@ -27,16 +27,16 @@ def create_task(task: Task):
     return task
 
 @app.get("/tasks", response_model=list[Task])
-def list_tasks(done: Optional[bool] = None):
-    """
-    Query param `done` is optional:
-      - /tasks            → returns all
-      - /tasks?done=true  → only completed
-      - /tasks?done=false → only pending
-    """
-    if done is None:
-        return TASKS
-    return [t for t in TASKS if t.done == done]
+def list_tasks(
+    done: Optional[bool] = None,
+    limit: int = Query(default=100, ge=1, le=1000),
+    offset: int = Query(default=0, ge=0),
+):
+    items = TASKS if done is None else [t for t in TASKS if t.done == done]
+    # stable order (by id) helps tests and predictability
+    items = sorted(items, key=lambda t: t.id)
+    # pagination slice
+    return items[offset : offset + limit]
     
 @app.patch("/tasks/{task_id}", response_model=Task)
 def update_task(task_id: int, patch: TaskUpdate):
