@@ -1,6 +1,6 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Literal
 
 app = FastAPI(title="Week 1 - Hello Tasks")
 
@@ -31,11 +31,16 @@ def list_tasks(
     done: Optional[bool] = None,
     limit: int = Query(default=100, ge=1, le=1000),
     offset: int = Query(default=0, ge=0),
+    sort_by: Literal["id", "title"] = "id",
+    order: Literal["asc", "desc"] = "asc",
 ):
     items = TASKS if done is None else [t for t in TASKS if t.done == done]
-    # stable order (by id) helps tests and predictability
-    items = sorted(items, key=lambda t: t.id)
-    # pagination slice
+
+    # pick a key function safely
+    key_fn = (lambda t: t.id) if sort_by == "id" else (lambda t: t.title.lower())
+
+    # reverse if needed, then paginate
+    items = sorted(items, key=key_fn, reverse=(order == "desc"))
     return items[offset : offset + limit]
     
 @app.patch("/tasks/{task_id}", response_model=Task)
