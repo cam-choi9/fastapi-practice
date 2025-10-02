@@ -8,10 +8,16 @@ class Task(BaseModel):
     id: int = Field(..., ge=1)
     title: str = Field(..., min_length=1, max_length=100)
     done: bool = False
+
+class TaskCreate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=100)
+    done: bool = False
+
+def _next_id() -> int:
+    return (max((t.id for t in TASKS), default=0) + 1)
     
 class TaskUpdate(BaseModel):
     done: Optional[bool] = None
-
 
 TASKS: list[Task] = []
 
@@ -20,11 +26,10 @@ def health():
     return {"status": "ok"}
 
 @app.post("/tasks", response_model=Task, status_code=201)
-def create_task(task: Task):
-    if any(t.id == task.id for t in TASKS):
-        raise HTTPException(status_code=400, detail="Task ID already exists")
-    TASKS.append(task)  
-    return task
+def create_task(payload: TaskCreate):    
+    new_task = Task(id=_next_id(), title=payload.title, done=payload.done)
+    TASKS.append(new_task)
+    return new_task    
 
 @app.get("/tasks", response_model=list[Task])
 def list_tasks(
